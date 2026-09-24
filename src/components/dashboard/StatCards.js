@@ -9,7 +9,7 @@ import {
 import { useAuth } from "@/lib/authContext";
 import { PERMISSIONS } from "@/lib/rbac";
 
-export default function StatCards({ data, loading }) {
+export default function StatCards({ data, loading, timeframe = "MTD" }) {
   const { hasPermission } = useAuth();
   const canViewRevenue = hasPermission(PERMISSIONS.VIEW_REVENUE);
   const stats = data?.stats || {
@@ -17,7 +17,26 @@ export default function StatCards({ data, loading }) {
     todayCheckOuts: 0,
     occupancyRate: 0,
     monthlyRevenue: 0,
+    timeframeRevenue: 0,
   };
+
+  const revenueLabel =
+    timeframe === "TODAY"
+      ? "Revenue (Today)"
+      : timeframe === "QTD"
+      ? "Revenue (QTD)"
+      : timeframe === "YTD"
+      ? "Revenue (YTD)"
+      : "Revenue (MTD)";
+
+  const revenueSubtext =
+    timeframe === "TODAY"
+      ? "Today's net earnings"
+      : timeframe === "QTD"
+      ? "Quarter-to-date net yield"
+      : timeframe === "YTD"
+      ? "Annual year-to-date yield"
+      : "Month-to-date net earnings";
 
   const cards = [
     {
@@ -45,11 +64,11 @@ export default function StatCards({ data, loading }) {
       format: "percent",
     },
     {
-      label: "Revenue (MTD)",
-      value: stats.monthlyRevenue,
+      label: revenueLabel,
+      value: stats.timeframeRevenue !== undefined ? stats.timeframeRevenue : stats.monthlyRevenue,
       icon: IconRevenue,
       tint: "blue",
-      subtext: "Net realized earnings",
+      subtext: revenueSubtext,
       format: "currency",
     },
   ];

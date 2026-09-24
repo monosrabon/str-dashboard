@@ -20,9 +20,9 @@ export default function DashboardPage() {
   const [timeframe, setTimeframe] = useState("MTD");
   const [autoConcierge, setAutoConcierge] = useState(true);
 
-  const fetchDashboard = useCallback(async () => {
+  const fetchDashboard = useCallback(async (activeTimeframe = timeframe) => {
     try {
-      const res = await fetch("/api/dashboard");
+      const res = await fetch(`/api/dashboard?timeframe=${activeTimeframe}`);
       const data = await res.json();
       setDashboardData(data);
     } catch (err) {
@@ -30,11 +30,11 @@ export default function DashboardPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [timeframe]);
 
   useEffect(() => {
-    fetchDashboard();
-  }, [fetchDashboard]);
+    fetchDashboard(timeframe);
+  }, [fetchDashboard, timeframe]);
 
   const todayStr = new Date().toLocaleDateString("en-US", {
     weekday: "short",
@@ -119,6 +119,7 @@ export default function DashboardPage() {
               type="button"
               className={`segmented-item ${timeframe === "TODAY" ? "active" : ""}`}
               onClick={() => setTimeframe("TODAY")}
+              title="Today: Single-day snapshot of current bookings, turnovers and daily earnings"
             >
               Today
             </button>
@@ -126,6 +127,7 @@ export default function DashboardPage() {
               type="button"
               className={`segmented-item ${timeframe === "MTD" ? "active" : ""}`}
               onClick={() => setTimeframe("MTD")}
+              title="MTD (Month-To-Date): Cumulative performance from the 1st of this month through today"
             >
               MTD
             </button>
@@ -133,6 +135,7 @@ export default function DashboardPage() {
               type="button"
               className={`segmented-item ${timeframe === "QTD" ? "active" : ""}`}
               onClick={() => setTimeframe("QTD")}
+              title="QTD (Quarter-To-Date): Cumulative performance from the start of the current 3-month fiscal quarter through today"
             >
               QTD
             </button>
@@ -140,6 +143,7 @@ export default function DashboardPage() {
               type="button"
               className={`segmented-item ${timeframe === "YTD" ? "active" : ""}`}
               onClick={() => setTimeframe("YTD")}
+              title="YTD (Year-To-Date): Cumulative performance from January 1st of the current year through today"
             >
               YTD
             </button>
@@ -268,7 +272,7 @@ export default function DashboardPage() {
       )}
 
       {/* Metric Cards */}
-      <StatCards data={dashboardData} loading={loading} />
+      <StatCards data={dashboardData} loading={loading} timeframe={timeframe} />
 
       {/* Content Grid */}
       <div className="content-grid">

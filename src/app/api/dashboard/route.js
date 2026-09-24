@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
 import { getDashboardData } from "@/lib/dataStore";
 
-export async function GET() {
+export async function GET(request) {
   try {
-    const data = await getDashboardData();
+    const { searchParams } = new URL(request.url);
+    const timeframe = searchParams.get("timeframe") || "MTD";
+    const data = await getDashboardData(timeframe);
     return NextResponse.json(data);
   } catch (error) {
     console.error("Dashboard API error:", error);

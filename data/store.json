@@ -24,7 +24,7 @@
       "bedrooms": 1,
       "bathrooms": 1,
       "basePrice": 300,
-      "status": "CLEANING",
+      "status": "AVAILABLE",
       "createdAt": "2026-09-24T06:36:32.890Z"
     }
   ],
@@ -48,11 +48,11 @@
       "checkOut": "2026-09-27T00:00:00.000Z",
       "totalPrice": 350,
       "status": "CHECKED_OUT",
-      "platform": "DIRECT",
+      "platform": "VRBO",
       "guestCount": 2,
       "notes": "Sea facing balcony requested - Verified by Admin",
       "createdAt": "2026-09-24T06:40:46.926Z",
-      "updatedAt": "2026-09-24T06:53:54.751Z"
+      "updatedAt": "2026-09-24T06:57:34.547Z"
     }
   ],
   "cleaningTasks": [
@@ -62,13 +62,14 @@
       "unitId": "unit_1790231792890_3hoqoo",
       "unitName": "1000 sq ft",
       "propertyName": "Mono's Arena",
-      "status": "PENDING",
+      "status": "IN_PROGRESS",
       "priority": "HIGH",
       "dueBy": "2026-09-24T06:53:54.669Z",
       "assignee": "Staff Cleaner",
       "assigneeInitials": "SC",
       "notes": "Turnover generated from checkout of reservation #acp50u (Monoarul Islam Srabon)",
-      "createdAt": "2026-09-24T06:40:46.927Z"
+      "createdAt": "2026-09-24T06:40:46.927Z",
+      "completedAt": "2026-09-24T06:57:53.175Z"
     }
   ],
   "maintenanceIssues": [],
@@ -77,9 +78,9 @@
       "id": "rev_1790232046927_d6wdo1",
       "reservationId": "res_1790232046926_acp50u",
       "grossAmount": 350,
-      "platformFee": 0,
+      "platformFee": 17.5,
       "cleaningFee": 45,
-      "netAmount": 350,
+      "netAmount": 332.5,
       "entryDate": "2026-09-24T00:00:00.000Z",
       "createdAt": "2026-09-24T06:40:46.927Z"
     }

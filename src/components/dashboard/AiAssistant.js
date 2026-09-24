@@ -8,7 +8,8 @@ export default function AiAssistant({ data, onMessageSent }) {
   const [messages, setMessages] = useState(data?.recentMessages || []);
   const [inputValue, setInputValue] = useState("");
   const [isSending, setIsSending] = useState(false);
-  const messagesEndRef = useRef(null);
+  const [hasInteracted, setHasInteracted] = useState(false);
+  const chatContainerRef = useRef(null);
 
   useEffect(() => {
     if (data?.recentMessages) {
@@ -16,13 +17,12 @@ export default function AiAssistant({ data, onMessageSent }) {
     }
   }, [data?.recentMessages]);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
-
   useEffect(() => {
-    scrollToBottom();
-  }, [messages, isSending]);
+    // Only scroll within the local chat container when user has sent a message
+    if (hasInteracted && chatContainerRef.current) {
+      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+    }
+  }, [messages, isSending, hasInteracted]);
 
   const formatTime = (iso) => {
     if (!iso) return "";
@@ -37,6 +37,7 @@ export default function AiAssistant({ data, onMessageSent }) {
     e?.preventDefault();
     if (!inputValue.trim() || isSending) return;
 
+    setHasInteracted(true);
     const userText = inputValue.trim();
     setInputValue("");
 
@@ -86,7 +87,7 @@ export default function AiAssistant({ data, onMessageSent }) {
         </div>
       </div>
       <div className="chat-container">
-        <div className="chat-messages">
+        <div ref={chatContainerRef} className="chat-messages">
           {messages.length === 0 ? (
             <div className="empty-state">
               <div className="empty-state-icon">
@@ -127,7 +128,6 @@ export default function AiAssistant({ data, onMessageSent }) {
               </div>
             </div>
           )}
-          <div ref={messagesEndRef} />
         </div>
         <form className="chat-input-container" onSubmit={handleSend}>
           <input

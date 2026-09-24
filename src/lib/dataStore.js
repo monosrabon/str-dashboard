@@ -531,36 +531,55 @@ export async function postMessage({ sender, message, guestName, isAiGenerated = 
 }
 
 // ─── DASHBOARD AGGREGATE ──────────────────────────────────────
-export async function getDashboardData() {
+export async function getDashboardData(timeframe = "MTD") {
   const store = await readStore();
   const today = new Date();
   const todayStr = today.toISOString().split("T")[0];
-  const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
 
-  // Today check-ins
+  // 1. Today's Check-ins:
+  // Scheduled arrival today (not cancelled) OR currently checked in
   const todayCheckIns = store.reservations.filter((r) => {
-    return (
-      r.checkIn.startsWith(todayStr) &&
-      (r.status === "CONFIRMED" || r.status === "CHECKED_IN")
-    );
+    const isTodayArrival = r.checkIn && r.checkIn.startsWith(todayStr);
+    const isCurrentlyCheckedIn = r.status === "CHECKED_IN";
+    return (isTodayArrival && r.status !== "CANCELLED") || isCurrentlyCheckedIn;
   }).length;
 
-  // Today check-outs
+  // 2. Today's Check-outs:
+  // Scheduled departure today OR checked out today
   const todayCheckOuts = store.reservations.filter((r) => {
-    return (
-      r.checkOut.startsWith(todayStr) &&
-      (r.status === "CHECKED_IN" || r.status === "CHECKED_OUT")
-    );
+    const isTodayDeparture = r.checkOut && r.checkOut.startsWith(todayStr);
+    const isCheckedOutToday =
+      r.status === "CHECKED_OUT" &&
+      ((r.updatedAt && r.updatedAt.startsWith(todayStr)) ||
+        (r.checkIn && r.checkIn.startsWith(todayStr)) ||
+        isTodayDeparture);
+    return isTodayDeparture || isCheckedOutToday;
   }).length;
 
-  // Occupancy rate
+  // 3. Occupancy rate:
+  // Units marked OCCUPIED or units currently hosting an active CHECKED_IN reservation
   const totalUnits = store.units.length;
-  const occupiedUnits = store.units.filter((u) => u.status === "OCCUPIED").length;
+  const activeCheckedInUnits = new Set(
+    store.reservations.filter((r) => r.status === "CHECKED_IN").map((r) => r.unitId)
+  );
+  const occupiedUnits = store.units.filter(
+    (u) => u.status === "OCCUPIED" || activeCheckedInUnits.has(u.id)
+  ).length;
   const occupancyRate = totalUnits > 0 ? Math.round((occupiedUnits / totalUnits) * 100) : 0;
 
-  // Monthly revenue
-  const monthlyRevenue = store.revenueEntries
-    .filter((r) => new Date(r.entryDate) >= startOfMonth)
+  // 4. Timeframe revenue calculation (TODAY, MTD, QTD, YTD)
+  let timeframeStart = new Date(today.getFullYear(), today.getMonth(), 1); // default MTD
+  if (timeframe === "TODAY") {
+    timeframeStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  } else if (timeframe === "QTD") {
+    const quarterMonth = Math.floor(today.getMonth() / 3) * 3;
+    timeframeStart = new Date(today.getFullYear(), quarterMonth, 1);
+  } else if (timeframe === "YTD") {
+    timeframeStart = new Date(today.getFullYear(), 0, 1);
+  }
+
+  const timeframeRevenue = store.revenueEntries
+    .filter((r) => new Date(r.entryDate) >= timeframeStart)
     .reduce((sum, r) => sum + (r.netAmount || 0), 0);
 
   // Active cleaning tasks
@@ -647,7 +666,8 @@ export async function getDashboardData() {
       todayCheckIns,
       todayCheckOuts,
       occupancyRate,
-      monthlyRevenue,
+      monthlyRevenue: timeframeRevenue,
+      timeframeRevenue,
     },
     cleaningTasks,
     maintenanceIssues,
