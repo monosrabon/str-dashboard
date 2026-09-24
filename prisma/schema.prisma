@@ -1,0 +1,299 @@
+// STR Property Management System - Database Schema
+// Multi-tenant SaaS architecture with role-based access
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── ENUMS ──────────────────────────────────────────────
+
+enum UserRole {
+  OWNER
+  MANAGER
+  CLEANER
+  MAINTENANCE
+}
+
+enum PropertyType {
+  APARTMENT
+  HOUSE
+  VILLA
+  CONDO
+  STUDIO
+}
+
+enum UnitStatus {
+  AVAILABLE
+  OCCUPIED
+  MAINTENANCE
+  CLEANING
+}
+
+enum ReservationStatus {
+  CONFIRMED
+  CHECKED_IN
+  CHECKED_OUT
+  CANCELLED
+}
+
+enum BookingPlatform {
+  AIRBNB
+  VRBO
+  BOOKING_COM
+  DIRECT
+}
+
+enum CleaningStatus {
+  PENDING
+  ASSIGNED
+  IN_PROGRESS
+  COMPLETED
+  INSPECTED
+}
+
+enum CleaningPriority {
+  NORMAL
+  URGENT
+}
+
+enum MaintenancePriority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum MaintenanceStatus {
+  REPORTED
+  TRIAGED
+  ASSIGNED
+  IN_PROGRESS
+  RESOLVED
+}
+
+// ─── MODELS ─────────────────────────────────────────────
+
+model Organization {
+  id        String   @id @default(cuid())
+  name      String
+  planTier  String   @default("free") @map("plan_tier")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  users      User[]
+  properties Property[]
+
+  @@map("organizations")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  orgId        String   @map("org_id")
+  name         String
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  role         UserRole @default(CLEANER)
+  avatar       String?
+  phone        String?
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  organization      Organization     @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  cleaningTasks      CleaningTask[]   @relation("CleanerAssignment")
+  maintenanceAssigned MaintenanceIssue[] @relation("MaintenanceAssignment")
+  maintenanceReported MaintenanceIssue[] @relation("MaintenanceReporter")
+
+  @@index([orgId])
+  @@index([email])
+  @@map("users")
+}
+
+model Property {
+  id             String       @id @default(cuid())
+  orgId          String       @map("org_id")
+  name           String
+  address        String
+  city           String       @default("")
+  state          String       @default("")
+  zipCode        String       @default("") @map("zip_code")
+  type           PropertyType @default(APARTMENT)
+  description    String?      @db.Text
+  amenities      Json         @default("[]")
+  aiKnowledgeBase String?     @db.Text @map("ai_knowledge_base")
+  coverImage     String?      @map("cover_image")
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
+
+  organization Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  units        Unit[]
+  expenses     Expense[]
+
+  @@index([orgId])
+  @@map("properties")
+}
+
+model Unit {
+  id         String     @id @default(cuid())
+  propertyId String     @map("property_id")
+  unitName   String     @map("unit_name")
+  maxGuests  Int        @default(2) @map("max_guests")
+  bedrooms   Int        @default(1)
+  bathrooms  Float      @default(1)
+  basePrice  Float      @default(100) @map("base_price")
+  status     UnitStatus @default(AVAILABLE)
+  createdAt  DateTime   @default(now()) @map("created_at")
+  updatedAt  DateTime   @updatedAt @map("updated_at")
+
+  property          Property           @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  reservations      Reservation[]
+  maintenanceIssues MaintenanceIssue[]
+
+  @@index([propertyId])
+  @@map("units")
+}
+
+model Guest {
+  id         String   @id @default(cuid())
+  name       String
+  email      String   @unique
+  phone      String?
+  totalStays Int      @default(0) @map("total_stays")
+  avgRating  Float?   @map("avg_rating")
+  notes      String?  @db.Text
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  reservations Reservation[]
+
+  @@map("guests")
+}
+
+model Reservation {
+  id           String            @id @default(cuid())
+  unitId       String            @map("unit_id")
+  guestId      String            @map("guest_id")
+  checkIn      DateTime          @map("check_in")
+  checkOut     DateTime          @map("check_out")
+  totalPrice   Float             @map("total_price")
+  status       ReservationStatus @default(CONFIRMED)
+  platform     BookingPlatform   @default(DIRECT)
+  platformData Json?             @map("platform_data")
+  guestCount   Int               @default(1) @map("guest_count")
+  notes        String?           @db.Text
+  createdAt    DateTime          @default(now()) @map("created_at")
+  updatedAt    DateTime          @updatedAt @map("updated_at")
+
+  unit          Unit           @relation(fields: [unitId], references: [id], onDelete: Cascade)
+  guest         Guest          @relation(fields: [guestId], references: [id])
+  cleaningTasks CleaningTask[]
+  revenueEntries RevenueEntry[]
+  guestMessages GuestMessage[]
+
+  @@index([unitId])
+  @@index([guestId])
+  @@index([checkIn, checkOut])
+  @@index([status])
+  @@map("reservations")
+}
+
+model CleaningTask {
+  id            String          @id @default(cuid())
+  reservationId String          @map("reservation_id")
+  assignedToId  String?         @map("assigned_to_id")
+  status        CleaningStatus  @default(PENDING)
+  priority      CleaningPriority @default(NORMAL)
+  dueBy         DateTime        @map("due_by")
+  notes         String?         @db.Text
+  checklist     Json            @default("[]")
+  completedAt   DateTime?       @map("completed_at")
+  createdAt     DateTime        @default(now()) @map("created_at")
+  updatedAt     DateTime        @updatedAt @map("updated_at")
+
+  reservation Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+  assignedTo  User?       @relation("CleanerAssignment", fields: [assignedToId], references: [id])
+
+  @@index([reservationId])
+  @@index([assignedToId])
+  @@index([status])
+  @@map("cleaning_tasks")
+}
+
+model MaintenanceIssue {
+  id           String              @id @default(cuid())
+  unitId       String              @map("unit_id")
+  reportedById String              @map("reported_by_id")
+  assignedToId String?             @map("assigned_to_id")
+  title        String
+  description  String              @db.Text
+  priority     MaintenancePriority @default(MEDIUM)
+  status       MaintenanceStatus   @default(REPORTED)
+  category     String              @default("general")
+  cost         Float?
+  photos       Json                @default("[]")
+  resolvedAt   DateTime?           @map("resolved_at")
+  createdAt    DateTime            @default(now()) @map("created_at")
+  updatedAt    DateTime            @updatedAt @map("updated_at")
+
+  unit       Unit @relation(fields: [unitId], references: [id], onDelete: Cascade)
+  reportedBy User @relation("MaintenanceReporter", fields: [reportedById], references: [id])
+  assignedTo User? @relation("MaintenanceAssignment", fields: [assignedToId], references: [id])
+
+  @@index([unitId])
+  @@index([status])
+  @@index([priority])
+  @@map("maintenance_issues")
+}
+
+model RevenueEntry {
+  id            String   @id @default(cuid())
+  reservationId String   @map("reservation_id")
+  grossAmount   Float    @map("gross_amount")
+  platformFee   Float    @default(0) @map("platform_fee")
+  cleaningFee   Float    @default(0) @map("cleaning_fee")
+  netAmount     Float    @map("net_amount")
+  entryDate     DateTime @map("entry_date")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  reservation Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+
+  @@index([reservationId])
+  @@index([entryDate])
+  @@map("revenue_entries")
+}
+
+model Expense {
+  id          String   @id @default(cuid())
+  propertyId  String   @map("property_id")
+  category    String
+  amount      Float
+  expenseDate DateTime @map("expense_date")
+  description String?  @db.Text
+  receipt     String?
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  @@index([propertyId])
+  @@index([expenseDate])
+  @@map("expenses")
+}
+
+model GuestMessage {
+  id            String   @id @default(cuid())
+  reservationId String   @map("reservation_id")
+  sender        String   // "guest" or "ai" or "host"
+  message       String   @db.Text
+  isAiGenerated Boolean  @default(false) @map("is_ai_generated")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  reservation Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+
+  @@index([reservationId])
+  @@map("guest_messages")
+}
