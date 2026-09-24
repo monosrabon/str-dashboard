@@ -1,11 +1,89 @@
 {
-  "properties": [],
-  "units": [],
-  "guests": [],
-  "reservations": [],
-  "cleaningTasks": [],
+  "properties": [
+    {
+      "id": "prop_1790231792889_sngwq2",
+      "name": "Mono's Arena",
+      "address": "",
+      "city": "",
+      "state": "",
+      "zipCode": "",
+      "type": "APARTMENT",
+      "description": "",
+      "amenities": [],
+      "aiKnowledgeBase": "",
+      "createdAt": "2026-09-24T06:36:32.890Z",
+      "updatedAt": "2026-09-24T06:36:32.890Z"
+    }
+  ],
+  "units": [
+    {
+      "id": "unit_1790231792890_3hoqoo",
+      "propertyId": "prop_1790231792889_sngwq2",
+      "unitName": "1000 sq ft",
+      "maxGuests": 2,
+      "bedrooms": 1,
+      "bathrooms": 1,
+      "basePrice": 300,
+      "status": "CLEANING",
+      "createdAt": "2026-09-24T06:36:32.890Z"
+    }
+  ],
+  "guests": [
+    {
+      "id": "gst_1790232046926_e0ipep",
+      "name": "Monoarul Islam Srabon",
+      "email": "srabonmono@gmail.com",
+      "phone": "+8801776305076",
+      "totalStays": 1,
+      "notes": "Must have sea facing balcony",
+      "createdAt": "2026-09-24T06:40:46.926Z"
+    }
+  ],
+  "reservations": [
+    {
+      "id": "res_1790232046926_acp50u",
+      "unitId": "unit_1790231792890_3hoqoo",
+      "guestId": "gst_1790232046926_e0ipep",
+      "checkIn": "2026-09-24T00:00:00.000Z",
+      "checkOut": "2026-09-27T00:00:00.000Z",
+      "totalPrice": 350,
+      "status": "CHECKED_OUT",
+      "platform": "DIRECT",
+      "guestCount": 2,
+      "notes": "Sea facing balcony requested - Verified by Admin",
+      "createdAt": "2026-09-24T06:40:46.926Z",
+      "updatedAt": "2026-09-24T06:53:54.751Z"
+    }
+  ],
+  "cleaningTasks": [
+    {
+      "id": "cln_1790232046927_e0ihbh",
+      "reservationId": "res_1790232046926_acp50u",
+      "unitId": "unit_1790231792890_3hoqoo",
+      "unitName": "1000 sq ft",
+      "propertyName": "Mono's Arena",
+      "status": "PENDING",
+      "priority": "HIGH",
+      "dueBy": "2026-09-24T06:53:54.669Z",
+      "assignee": "Staff Cleaner",
+      "assigneeInitials": "SC",
+      "notes": "Turnover generated from checkout of reservation #acp50u (Monoarul Islam Srabon)",
+      "createdAt": "2026-09-24T06:40:46.927Z"
+    }
+  ],
   "maintenanceIssues": [],
-  "revenueEntries": [],
+  "revenueEntries": [
+    {
+      "id": "rev_1790232046927_d6wdo1",
+      "reservationId": "res_1790232046926_acp50u",
+      "grossAmount": 350,
+      "platformFee": 0,
+      "cleaningFee": 45,
+      "netAmount": 350,
+      "entryDate": "2026-09-24T00:00:00.000Z",
+      "createdAt": "2026-09-24T06:40:46.927Z"
+    }
+  ],
   "expenses": [],
   "messages": []
 }

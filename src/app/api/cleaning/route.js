@@ -1,10 +1,27 @@
 import { NextResponse } from "next/server";
-import { getCleaningTasks, updateCleaningStatus } from "@/lib/dataStore";
+import {
+  getCleaningTasks,
+  updateCleaningStatus,
+  createCleaningTask,
+} from "@/lib/dataStore";
 
 export async function GET() {
   try {
     const tasks = await getCleaningTasks();
     return NextResponse.json({ tasks });
+  } catch (err) {
+    return NextResponse.json({ error: err.message }, { status: 500 });
+  }
+}
+
+export async function POST(req) {
+  try {
+    const body = await req.json();
+    if (!body.unitId) {
+      return NextResponse.json({ error: "Unit ID is required" }, { status: 400 });
+    }
+    const task = await createCleaningTask(body);
+    return NextResponse.json({ task }, { status: 201 });
   } catch (err) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }

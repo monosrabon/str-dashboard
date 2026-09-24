@@ -157,6 +157,8 @@ export async function getReservations() {
     const unit = store.units.find((u) => u.id === r.unitId);
     const property = unit ? store.properties.find((p) => p.id === unit.propertyId) : null;
     const guest = store.guests.find((g) => g.id === r.guestId);
+    const cleaningTasks = store.cleaningTasks.filter((t) => t.reservationId === r.id);
+    const cleaningTask = cleaningTasks.length > 0 ? cleaningTasks[cleaningTasks.length - 1] : null;
     return {
       ...r,
       unitName: unit?.unitName || "Unit",
@@ -164,6 +166,7 @@ export async function getReservations() {
       guestName: guest?.name || "Guest",
       guestEmail: guest?.email || "",
       guestPhone: guest?.phone || "",
+      cleaningTask: cleaningTask || null,
     };
   });
 }
@@ -269,37 +272,143 @@ export async function createReservation(resData) {
   return newRes;
 }
 
-export async function updateReservationStatus(id, newStatus) {
+export async function updateReservation(id, updateData) {
   const store = await readStore();
   const res = store.reservations.find((r) => r.id === id);
   if (!res) throw new Error("Reservation not found");
 
-  res.status = newStatus;
-  res.updatedAt = new Date().toISOString();
+  const guest = store.guests.find((g) => g.id === res.guestId);
+  if (guest) {
+    if (updateData.guestName) guest.name = updateData.guestName;
+    if (updateData.guestEmail !== undefined) guest.email = updateData.guestEmail;
+    if (updateData.guestPhone !== undefined) guest.phone = updateData.guestPhone;
+  }
 
-  // Update unit status according to reservation state
-  const unit = store.units.find((u) => u.id === res.unitId);
-  if (unit) {
-    if (newStatus === "CHECKED_IN") {
-      unit.status = "OCCUPIED";
-    } else if (newStatus === "CHECKED_OUT") {
-      unit.status = "CLEANING";
-      // Update cleaning task to urgent if same day turnover
-      const task = store.cleaningTasks.find((t) => t.reservationId === id);
-      if (task) task.status = "PENDING";
-    } else if (newStatus === "CANCELLED") {
-      unit.status = "AVAILABLE";
+  if (updateData.checkIn) res.checkIn = new Date(updateData.checkIn).toISOString();
+  if (updateData.checkOut) res.checkOut = new Date(updateData.checkOut).toISOString();
+  if (updateData.totalPrice !== undefined) res.totalPrice = Number(updateData.totalPrice);
+  if (updateData.guestCount !== undefined) res.guestCount = Number(updateData.guestCount);
+  if (updateData.platform) res.platform = updateData.platform;
+  if (updateData.notes !== undefined) res.notes = updateData.notes;
+
+  const newStatus = updateData.status;
+  if (newStatus && newStatus !== res.status) {
+    res.status = newStatus;
+
+    const unit = store.units.find((u) => u.id === res.unitId);
+    if (unit) {
+      if (newStatus === "CHECKED_IN") {
+        unit.status = "OCCUPIED";
+      } else if (newStatus === "CHECKED_OUT") {
+        unit.status = "CLEANING";
+        // Pipelining into housekeeping:
+        let task = store.cleaningTasks.find((t) => t.reservationId === id);
+        if (task) {
+          task.status = "PENDING";
+          task.priority = "HIGH";
+          delete task.completedAt;
+          task.dueBy = new Date().toISOString();
+          task.notes = `Turnover generated from checkout of reservation #${res.id.slice(-6)} (${guest?.name || 'Guest'})`;
+        } else {
+          const property = unit ? store.properties.find((p) => p.id === unit.propertyId) : null;
+          store.cleaningTasks.push({
+            id: `cln_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
+            reservationId: id,
+            unitId: res.unitId,
+            unitName: unit?.unitName || "Unit",
+            propertyName: property?.name || "Property",
+            status: "PENDING",
+            priority: "HIGH",
+            dueBy: new Date().toISOString(),
+            assignee: "Staff Cleaner",
+            assigneeInitials: "SC",
+            notes: `Turnover generated from checkout of reservation #${res.id.slice(-6)} (${guest?.name || 'Guest'})`,
+            createdAt: new Date().toISOString(),
+          });
+        }
+      } else if (newStatus === "CONFIRMED") {
+        unit.status = "RESERVED";
+      } else if (newStatus === "CANCELLED") {
+        unit.status = "AVAILABLE";
+        const task = store.cleaningTasks.find((t) => t.reservationId === id && t.status !== "COMPLETED");
+        if (task) task.status = "CANCELLED";
+      }
     }
   }
 
+  res.updatedAt = new Date().toISOString();
+
+  // Sync revenue entry if price or platform changed
+  const rev = store.revenueEntries.find((r) => r.reservationId === id);
+  if (rev) {
+    if (updateData.totalPrice !== undefined) rev.grossAmount = res.totalPrice;
+    const platformFee = res.platform === "AIRBNB" ? res.totalPrice * 0.03 : res.platform === "VRBO" ? res.totalPrice * 0.05 : 0;
+    rev.platformFee = platformFee;
+    rev.netAmount = res.totalPrice - platformFee;
+  }
+
   await writeStore(store);
-  return res;
+
+  const unit = store.units.find((u) => u.id === res.unitId);
+  const property = unit ? store.properties.find((p) => p.id === unit.propertyId) : null;
+  const cleaningTasks = store.cleaningTasks.filter((t) => t.reservationId === res.id);
+  return {
+    ...res,
+    unitName: unit?.unitName || "Unit",
+    propertyName: property?.name || "Property",
+    guestName: guest?.name || "Guest",
+    guestEmail: guest?.email || "",
+    guestPhone: guest?.phone || "",
+    cleaningTask: cleaningTasks.length > 0 ? cleaningTasks[cleaningTasks.length - 1] : null,
+  };
+}
+
+export async function updateReservationStatus(id, newStatus) {
+  return updateReservation(id, { status: newStatus });
 }
 
 // ─── CLEANING ─────────────────────────────────────────────────
 export async function getCleaningTasks() {
   const store = await readStore();
-  return store.cleaningTasks;
+  return store.cleaningTasks.map((t) => {
+    const res = store.reservations.find((r) => r.id === t.reservationId);
+    const guest = res ? store.guests.find((g) => g.id === res.guestId) : null;
+    return {
+      ...t,
+      guestName: guest?.name || null,
+      guestPhone: guest?.phone || null,
+      reservationStatus: res?.status || null,
+    };
+  });
+}
+
+export async function createCleaningTask(taskData) {
+  const store = await readStore();
+  const unit = store.units.find((u) => u.id === taskData.unitId);
+  const property = unit ? store.properties.find((p) => p.id === unit.propertyId) : null;
+
+  const newTask = {
+    id: `cln_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
+    reservationId: taskData.reservationId || null,
+    unitId: taskData.unitId,
+    unitName: unit?.unitName || taskData.unitName || "Unit",
+    propertyName: property?.name || taskData.propertyName || "Property",
+    status: taskData.status || "PENDING",
+    priority: taskData.priority || "NORMAL",
+    dueBy: taskData.dueBy || new Date().toISOString(),
+    assignee: taskData.assignee || "Staff Cleaner",
+    assigneeInitials: taskData.assigneeInitials || (taskData.assignee ? taskData.assignee.slice(0, 2).toUpperCase() : "SC"),
+    notes: taskData.notes || "Manual turnover request",
+    createdAt: new Date().toISOString(),
+  };
+
+  store.cleaningTasks.push(newTask);
+  if (unit) {
+    unit.status = "CLEANING";
+  }
+
+  await writeStore(store);
+  return newTask;
 }
 
 export async function updateCleaningStatus(id, status) {

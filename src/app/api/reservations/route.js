@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import {
   getReservations,
   createReservation,
+  updateReservation,
   updateReservationStatus,
 } from "@/lib/dataStore";
 
@@ -34,15 +35,15 @@ export async function POST(req) {
 export async function PATCH(req) {
   try {
     const body = await req.json();
-    const { id, status } = body;
-    if (!id || !status) {
+    const { id } = body;
+    if (!id) {
       return NextResponse.json(
-        { error: "Reservation ID and status are required" },
+        { error: "Reservation ID is required" },
         { status: 400 }
       );
     }
 
-    const reservation = await updateReservationStatus(id, status);
+    const reservation = await updateReservation(id, body);
     return NextResponse.json({ reservation });
   } catch (err) {
     return NextResponse.json({ error: err.message }, { status: 500 });
