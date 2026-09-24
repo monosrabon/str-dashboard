@@ -2,8 +2,12 @@
 
 import { useState, useEffect, useRef } from "react";
 import { IconBot, IconSend, IconSparkles } from "@/components/icons";
+import { useAuth } from "@/lib/authContext";
+import { PERMISSIONS } from "@/lib/rbac";
+import AccessDenied from "@/components/AccessDenied";
 
 export default function AiAssistantPage() {
+  const { hasPermission } = useAuth();
   const [messages, setMessages] = useState([]);
   const [inputValue, setInputValue] = useState("");
   const [isSending, setIsSending] = useState(false);
@@ -98,6 +102,15 @@ export default function AiAssistantPage() {
     "Where is designated guest parking?",
     "Where are extra linens and supplies stored?",
   ];
+
+  if (!hasPermission(PERMISSIONS.VIEW_AI_CONCIERGE)) {
+    return (
+      <AccessDenied
+        requiredPermission={PERMISSIONS.VIEW_AI_CONCIERGE}
+        moduleName="AI Guest Concierge Engine"
+      />
+    );
+  }
 
   return (
     <>
@@ -331,9 +344,15 @@ export default function AiAssistantPage() {
               />
             </div>
 
-            <button type="submit" className="btn btn-primary btn-sm" style={{ width: "100%" }}>
-              Commit &amp; Publish Knowledge Base
-            </button>
+            {hasPermission(PERMISSIONS.MANAGE_AI_CONCIERGE) ? (
+              <button type="submit" className="btn btn-primary btn-sm" style={{ width: "100%" }}>
+                Commit &amp; Publish Knowledge Base
+              </button>
+            ) : (
+              <div style={{ fontSize: "11px", color: "var(--text-tertiary)", textAlign: "center", fontStyle: "italic", padding: "8px" }}>
+                Read-only: Concierge configuration management is restricted.
+              </div>
+            )}
           </form>
         </div>
       </div>

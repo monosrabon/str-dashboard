@@ -2,8 +2,12 @@
 
 import { useState, useEffect } from "react";
 import { IconUsers, IconSearch } from "@/components/icons";
+import { useAuth } from "@/lib/authContext";
+import { PERMISSIONS } from "@/lib/rbac";
+import AccessDenied from "@/components/AccessDenied";
 
 export default function GuestsPage() {
+  const { hasPermission } = useAuth();
   const [guests, setGuests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -33,6 +37,15 @@ export default function GuestsPage() {
       (g.phone && g.phone.includes(q))
     );
   });
+
+  if (!hasPermission(PERMISSIONS.VIEW_GUESTS)) {
+    return (
+      <AccessDenied
+        requiredPermission={PERMISSIONS.VIEW_GUESTS}
+        moduleName="Guest Directory & CRM Records"
+      />
+    );
+  }
 
   return (
     <>

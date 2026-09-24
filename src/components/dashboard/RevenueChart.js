@@ -1,9 +1,13 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { IconRevenue, IconTrendUp } from "@/components/icons";
+import { IconRevenue, IconTrendUp, IconShield } from "@/components/icons";
+import { useAuth } from "@/lib/authContext";
+import { PERMISSIONS } from "@/lib/rbac";
 
 export default function RevenueChart({ data, loading }) {
+  const { hasPermission } = useAuth();
+  const canViewRevenue = hasPermission(PERMISSIONS.VIEW_REVENUE);
   const canvasRef = useRef(null);
   const chartData = data?.revenueHistory || [];
 
@@ -123,7 +127,7 @@ export default function RevenueChart({ data, loading }) {
           </div>
           Revenue Trajectory
         </div>
-        {hasData && (
+        {hasData && canViewRevenue && (
           <div className="card-actions">
             <span
               style={{
@@ -146,7 +150,24 @@ export default function RevenueChart({ data, loading }) {
         )}
       </div>
       <div className="card-body">
-        {loading ? (
+        {!canViewRevenue ? (
+          <div className="empty-state" style={{ padding: "var(--space-6) var(--space-4)" }}>
+            <div
+              className="empty-state-icon"
+              style={{
+                backgroundColor: "var(--accent-red-bg)",
+                color: "var(--accent-red)",
+                border: "1px solid var(--accent-red-border)",
+              }}
+            >
+              <IconShield size={20} />
+            </div>
+            <div className="empty-state-title">Executive Yield Restricted</div>
+            <div className="empty-state-text">
+              Realized P&amp;L performance charts and profit distributions are restricted to Executive Suite (OWNER) credentials.
+            </div>
+          </div>
+        ) : loading ? (
           <div className="skeleton" style={{ width: "100%", height: 200 }} />
         ) : !hasData ? (
           <div className="empty-state">

@@ -2,8 +2,12 @@
 
 import { useState, useEffect } from "react";
 import { IconRevenue, IconPlus } from "@/components/icons";
+import { useAuth } from "@/lib/authContext";
+import { PERMISSIONS } from "@/lib/rbac";
+import AccessDenied from "@/components/AccessDenied";
 
 export default function RevenuePage() {
+  const { currentUser, hasPermission } = useAuth();
   const [data, setData] = useState({ revenueEntries: [], expenses: [] });
   const [loading, setLoading] = useState(true);
   const [isExpenseOpen, setIsExpenseOpen] = useState(false);
@@ -18,7 +22,9 @@ export default function RevenuePage() {
   async function fetchFinancials() {
     try {
       setLoading(true);
-      const res = await fetch("/api/revenue");
+      const res = await fetch("/api/revenue", {
+        headers: { "x-user-role": currentUser.role },
+      });
       const d = await res.json();
       setData(d);
     } catch (err) {
@@ -30,7 +36,7 @@ export default function RevenuePage() {
 
   useEffect(() => {
     fetchFinancials();
-  }, []);
+  }, [currentUser.role]);
 
   const handleAddExpense = async (e) => {
     e.preventDefault();
@@ -39,7 +45,10 @@ export default function RevenuePage() {
     try {
       await fetch("/api/revenue", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "x-user-role": currentUser.role,
+        },
         body: JSON.stringify(expenseForm),
       });
       setIsExpenseOpen(false);
@@ -68,6 +77,15 @@ export default function RevenuePage() {
       year: "numeric",
     });
   };
+
+  if (!hasPermission(PERMISSIONS.VIEW_REVENUE)) {
+    return (
+      <AccessDenied
+        requiredPermission={PERMISSIONS.VIEW_REVENUE}
+        moduleName="Financial Yield & P&L Statements"
+      />
+    );
+  }
 
   return (
     <>

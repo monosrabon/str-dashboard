@@ -2,6 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { IconMaintenance, IconPlus, IconCheck } from "@/components/icons";
+import { useAuth } from "@/lib/authContext";
+import { PERMISSIONS } from "@/lib/rbac";
+import AccessDenied from "@/components/AccessDenied";
 
 const priorityConfig = {
   LOW: { label: "Low", badge: "badge-cyan" },
@@ -17,6 +20,7 @@ const statusConfig = {
 };
 
 export default function MaintenancePage() {
+  const { hasPermission } = useAuth();
   const [issues, setIssues] = useState([]);
   const [properties, setProperties] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -105,6 +109,15 @@ export default function MaintenancePage() {
     (p.units || []).map((u) => ({ ...u, propertyName: p.name }))
   );
 
+  if (!hasPermission(PERMISSIONS.VIEW_MAINTENANCE)) {
+    return (
+      <AccessDenied
+        requiredPermission={PERMISSIONS.VIEW_MAINTENANCE}
+        moduleName="Facilities & Maintenance"
+      />
+    );
+  }
+
   return (
     <>
       <div className="page-header">
@@ -113,10 +126,12 @@ export default function MaintenancePage() {
           <p className="page-subtitle">Asset servicing tickets, repair logs, contractor allocations, and remediation status.</p>
         </div>
         <div className="page-header-actions">
-          <button className="btn btn-primary btn-sm" onClick={() => setIsModalOpen(true)}>
-            <IconPlus size={14} />
-            Log Work Order
-          </button>
+          {hasPermission(PERMISSIONS.MANAGE_MAINTENANCE) && (
+            <button className="btn btn-primary btn-sm" onClick={() => setIsModalOpen(true)}>
+              <IconPlus size={14} />
+              Log Work Order
+            </button>
+          )}
         </div>
       </div>
 
@@ -275,7 +290,7 @@ export default function MaintenancePage() {
                     </span>
                   </div>
 
-                  {issue.status !== "RESOLVED" && (
+                  {issue.status !== "RESOLVED" && hasPermission(PERMISSIONS.MANAGE_MAINTENANCE) && (
                     <button
                       className="btn btn-secondary btn-sm"
                       onClick={() => handleResolve(issue.id)}

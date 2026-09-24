@@ -2,6 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { IconCleaning, IconCheck } from "@/components/icons";
+import { useAuth } from "@/lib/authContext";
+import { PERMISSIONS } from "@/lib/rbac";
+import AccessDenied from "@/components/AccessDenied";
 
 const statusConfig = {
   PENDING: { label: "Pending", badge: "badge-amber" },
@@ -11,6 +14,7 @@ const statusConfig = {
 };
 
 export default function CleaningPage() {
+  const { hasPermission } = useAuth();
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState(null);
@@ -57,6 +61,15 @@ export default function CleaningPage() {
       minute: "2-digit",
     });
   };
+
+  if (!hasPermission(PERMISSIONS.VIEW_CLEANING)) {
+    return (
+      <AccessDenied
+        requiredPermission={PERMISSIONS.VIEW_CLEANING}
+        moduleName="Housekeeping & Turnover Logistics"
+      />
+    );
+  }
 
   return (
     <>

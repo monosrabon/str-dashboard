@@ -3,6 +3,9 @@
 import { useState, useEffect } from "react";
 import NewReservationModal from "@/components/dashboard/NewReservationModal";
 import { IconPlus, IconCheckIn, IconCheckOut, IconCalendar } from "@/components/icons";
+import { useAuth } from "@/lib/authContext";
+import { PERMISSIONS } from "@/lib/rbac";
+import AccessDenied from "@/components/AccessDenied";
 
 const platformConfig = {
   AIRBNB: { label: "Airbnb", badge: "badge-maroon" },
@@ -19,6 +22,7 @@ const statusConfig = {
 };
 
 export default function ReservationsPage() {
+  const { hasPermission } = useAuth();
   const [reservations, setReservations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("ALL");
@@ -80,6 +84,15 @@ export default function ReservationsPage() {
     { id: "CANCELLED", label: "Cancelled" },
   ];
 
+  if (!hasPermission(PERMISSIONS.VIEW_RESERVATIONS)) {
+    return (
+      <AccessDenied
+        requiredPermission={PERMISSIONS.VIEW_RESERVATIONS}
+        moduleName="Central Reservation Calendar & Folios"
+      />
+    );
+  }
+
   return (
     <>
       <div className="page-header">
@@ -88,13 +101,15 @@ export default function ReservationsPage() {
           <p className="page-subtitle">Multi-channel reservation registry, guest arrival processing, and lifecycle tracking.</p>
         </div>
         <div className="page-header-actions">
-          <button
-            className="btn btn-primary btn-sm"
-            onClick={() => setIsModalOpen(true)}
-          >
-            <IconPlus size={14} />
-            Register Reservation
-          </button>
+          {hasPermission(PERMISSIONS.MANAGE_RESERVATIONS) && (
+            <button
+              className="btn btn-primary btn-sm"
+              onClick={() => setIsModalOpen(true)}
+            >
+              <IconPlus size={14} />
+              Register Reservation
+            </button>
+          )}
         </div>
       </div>
 
@@ -224,40 +239,42 @@ export default function ReservationsPage() {
                   </div>
 
                   {/* Lifecycle Actions */}
-                  <div style={{ display: "flex", gap: "6px" }}>
-                    {res.status === "CONFIRMED" && (
-                      <button
-                        className="btn btn-primary btn-sm"
-                        style={{ padding: "5px 10px", fontSize: "12px" }}
-                        disabled={updatingId === res.id}
-                        onClick={() => handleStatusChange(res.id, "CHECKED_IN")}
-                      >
-                        <IconCheckIn size={13} />
-                        Process Check-In
-                      </button>
-                    )}
-                    {res.status === "CHECKED_IN" && (
-                      <button
-                        className="btn btn-secondary btn-sm"
-                        style={{ padding: "5px 10px", fontSize: "12px" }}
-                        disabled={updatingId === res.id}
-                        onClick={() => handleStatusChange(res.id, "CHECKED_OUT")}
-                      >
-                        <IconCheckOut size={13} />
-                        Execute Checkout
-                      </button>
-                    )}
-                    {res.status !== "CANCELLED" && res.status !== "CHECKED_OUT" && (
-                      <button
-                        className="btn btn-ghost btn-sm"
-                        style={{ padding: "5px 8px", fontSize: "12px", color: "var(--accent-red)" }}
-                        disabled={updatingId === res.id}
-                        onClick={() => handleStatusChange(res.id, "CANCELLED")}
-                      >
-                        Void
-                      </button>
-                    )}
-                  </div>
+                  {hasPermission(PERMISSIONS.MANAGE_RESERVATIONS) && (
+                    <div style={{ display: "flex", gap: "6px" }}>
+                      {res.status === "CONFIRMED" && (
+                        <button
+                          className="btn btn-primary btn-sm"
+                          style={{ padding: "5px 10px", fontSize: "12px" }}
+                          disabled={updatingId === res.id}
+                          onClick={() => handleStatusChange(res.id, "CHECKED_IN")}
+                        >
+                          <IconCheckIn size={13} />
+                          Process Check-In
+                        </button>
+                      )}
+                      {res.status === "CHECKED_IN" && (
+                        <button
+                          className="btn btn-secondary btn-sm"
+                          style={{ padding: "5px 10px", fontSize: "12px" }}
+                          disabled={updatingId === res.id}
+                          onClick={() => handleStatusChange(res.id, "CHECKED_OUT")}
+                        >
+                          <IconCheckOut size={13} />
+                          Execute Checkout
+                        </button>
+                      )}
+                      {res.status !== "CANCELLED" && res.status !== "CHECKED_OUT" && (
+                        <button
+                          className="btn btn-ghost btn-sm"
+                          style={{ padding: "5px 8px", fontSize: "12px", color: "var(--accent-red)" }}
+                          disabled={updatingId === res.id}
+                          onClick={() => handleStatusChange(res.id, "CANCELLED")}
+                        >
+                          Void
+                        </button>
+                      )}
+                    </div>
+                  )}
                 </div>
               );
             })

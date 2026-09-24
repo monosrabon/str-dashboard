@@ -9,8 +9,11 @@ import AiAssistant from "@/components/dashboard/AiAssistant";
 import RecentActivity from "@/components/dashboard/RecentActivity";
 import NewReservationModal from "@/components/dashboard/NewReservationModal";
 import { IconPlus, IconDownload, IconShield } from "@/components/icons";
+import { useAuth } from "@/lib/authContext";
+import { PERMISSIONS } from "@/lib/rbac";
 
 export default function DashboardPage() {
+  const { currentUser, currentRole, hasPermission } = useAuth();
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -66,7 +69,7 @@ export default function DashboardPage() {
       {/* Executive Command Header */}
       <div className="page-header">
         <div className="page-header-left">
-          <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px", flexWrap: "wrap" }}>
             <h1 className="page-title">Operations Command Center</h1>
             <span
               style={{
@@ -84,6 +87,24 @@ export default function DashboardPage() {
             >
               <IconShield size={12} />
               Enterprise v2.4
+            </span>
+            <span
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "4px",
+                fontSize: "11px",
+                fontWeight: 600,
+                padding: "2px 8px",
+                borderRadius: "var(--radius-full)",
+                backgroundColor: "var(--bg-surface)",
+                color: "var(--text-secondary)",
+                border: "1px solid var(--border-light)",
+                boxShadow: "var(--shadow-xs)",
+              }}
+              title={`Simulated Persona: ${currentUser.title} (${currentUser.department})`}
+            >
+              Role: <strong style={{ color: "var(--color-primary)" }}>{currentUser.role}</strong> &middot; {currentUser.name}
             </span>
           </div>
           <p className="page-subtitle">
@@ -125,21 +146,25 @@ export default function DashboardPage() {
           </div>
 
           {/* Action Buttons */}
-          <button
-            className="btn btn-secondary btn-sm"
-            onClick={handleExport}
-            title="Export analytical dataset in JSON format"
-          >
-            <IconDownload size={14} />
-            Export Audit
-          </button>
-          <button
-            className="btn btn-primary btn-sm"
-            onClick={() => setIsModalOpen(true)}
-          >
-            <IconPlus size={14} />
-            New Reservation
-          </button>
+          {hasPermission(PERMISSIONS.EXPORT_AUDIT) && (
+            <button
+              className="btn btn-secondary btn-sm"
+              onClick={handleExport}
+              title="Export analytical dataset in JSON format"
+            >
+              <IconDownload size={14} />
+              Export Audit
+            </button>
+          )}
+          {hasPermission(PERMISSIONS.MANAGE_RESERVATIONS) && (
+            <button
+              className="btn btn-primary btn-sm"
+              onClick={() => setIsModalOpen(true)}
+            >
+              <IconPlus size={14} />
+              New Reservation
+            </button>
+          )}
         </div>
       </div>
 
@@ -162,16 +187,25 @@ export default function DashboardPage() {
         <div style={{ display: "flex", alignItems: "center", gap: "16px", fontSize: "var(--font-size-xs)" }}>
           <span style={{ color: "var(--text-tertiary)", fontWeight: 600 }}>SYSTEM CONTROLS:</span>
           <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-            <label className="toggle-switch">
+            <label className="toggle-switch" style={{ opacity: hasPermission(PERMISSIONS.MANAGE_AI_CONCIERGE) ? 1 : 0.5 }}>
               <input
                 type="checkbox"
                 checked={autoConcierge}
+                disabled={!hasPermission(PERMISSIONS.MANAGE_AI_CONCIERGE)}
                 onChange={(e) => setAutoConcierge(e.target.checked)}
               />
               <span className="toggle-slider" />
             </label>
             <span style={{ fontWeight: 500, color: "var(--text-secondary)" }}>
-              AI Auto-Concierge Dispatch: <strong style={{ color: autoConcierge ? "var(--accent-green)" : "var(--text-muted)" }}>{autoConcierge ? "Enabled" : "Paused"}</strong>
+              AI Auto-Concierge Dispatch:{" "}
+              <strong style={{ color: autoConcierge ? "var(--accent-green)" : "var(--text-muted)" }}>
+                {autoConcierge ? "Enabled" : "Paused"}
+              </strong>
+              {!hasPermission(PERMISSIONS.MANAGE_AI_CONCIERGE) && (
+                <span style={{ marginLeft: 6, fontSize: "10px", color: "var(--accent-amber)" }}>
+                  (Restricted)
+                </span>
+              )}
             </span>
           </div>
         </div>
@@ -221,13 +255,15 @@ export default function DashboardPage() {
               The system is primed for your live property portfolio. No demo or synthetic records are pre-populated. Register your rental units or record your first booking to activate live telemetry.
             </p>
           </div>
-          <button
-            className="btn btn-primary btn-sm"
-            onClick={() => setIsModalOpen(true)}
-          >
-            <IconPlus size={14} />
-            Register Initial Booking
-          </button>
+          {hasPermission(PERMISSIONS.MANAGE_RESERVATIONS) && (
+            <button
+              className="btn btn-primary btn-sm"
+              onClick={() => setIsModalOpen(true)}
+            >
+              <IconPlus size={14} />
+              Register Initial Booking
+            </button>
+          )}
         </div>
       )}
 

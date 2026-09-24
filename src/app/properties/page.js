@@ -2,8 +2,12 @@
 
 import { useState, useEffect } from "react";
 import { IconProperties, IconPlus } from "@/components/icons";
+import { useAuth } from "@/lib/authContext";
+import { PERMISSIONS } from "@/lib/rbac";
+import AccessDenied from "@/components/AccessDenied";
 
 export default function PropertiesPage() {
+  const { hasPermission } = useAuth();
   const [properties, setProperties] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isAddingProperty, setIsAddingProperty] = useState(false);
@@ -118,6 +122,15 @@ export default function PropertiesPage() {
     }
   };
 
+  if (!hasPermission(PERMISSIONS.VIEW_PROPERTIES)) {
+    return (
+      <AccessDenied
+        requiredPermission={PERMISSIONS.VIEW_PROPERTIES}
+        moduleName="Portfolio Assets & Unit Registry"
+      />
+    );
+  }
+
   return (
     <>
       <div className="page-header">
@@ -126,13 +139,15 @@ export default function PropertiesPage() {
           <p className="page-subtitle">Real estate inventory, unit configurations, and base tariff management.</p>
         </div>
         <div className="page-header-actions">
-          <button
-            className="btn btn-primary btn-sm"
-            onClick={() => setIsAddingProperty(true)}
-          >
-            <IconPlus size={14} />
-            Register Property Asset
-          </button>
+          {hasPermission(PERMISSIONS.MANAGE_PROPERTIES) && (
+            <button
+              className="btn btn-primary btn-sm"
+              onClick={() => setIsAddingProperty(true)}
+            >
+              <IconPlus size={14} />
+              Register Property Asset
+            </button>
+          )}
         </div>
       </div>
 
@@ -373,14 +388,16 @@ export default function PropertiesPage() {
             <div className="empty-state-text">
               Begin by registering your real estate units, apartments, or private residences.
             </div>
-            <button
-              className="btn btn-primary btn-sm"
-              style={{ marginTop: "var(--space-4)" }}
-              onClick={() => setIsAddingProperty(true)}
-            >
-              <IconPlus size={14} />
-              Register Property Asset
-            </button>
+            {hasPermission(PERMISSIONS.MANAGE_PROPERTIES) && (
+              <button
+                className="btn btn-primary btn-sm"
+                style={{ marginTop: "var(--space-4)" }}
+                onClick={() => setIsAddingProperty(true)}
+              >
+                <IconPlus size={14} />
+                Register Property Asset
+              </button>
+            )}
           </div>
         </div>
       ) : (
@@ -397,18 +414,20 @@ export default function PropertiesPage() {
                     {prop.type}
                   </span>
                 </div>
-                <div className="card-actions">
-                  <button
-                    className="btn btn-secondary btn-sm"
-                    onClick={() => {
-                      setSelectedPropertyId(prop.id);
-                      setIsAddingUnit(true);
-                    }}
-                  >
-                    <IconPlus size={13} />
-                    Add Unit
-                  </button>
-                </div>
+                {hasPermission(PERMISSIONS.MANAGE_PROPERTIES) && (
+                  <div className="card-actions">
+                    <button
+                      className="btn btn-secondary btn-sm"
+                      onClick={() => {
+                        setSelectedPropertyId(prop.id);
+                        setIsAddingUnit(true);
+                      }}
+                    >
+                      <IconPlus size={13} />
+                      Add Unit
+                    </button>
+                  </div>
+                )}
               </div>
               <div className="card-body">
                 <div style={{ fontSize: "var(--font-size-xs)", color: "var(--text-secondary)", marginBottom: "var(--space-3)" }}>

@@ -6,8 +6,12 @@ import {
   IconOccupancy,
   IconRevenue,
 } from "@/components/icons";
+import { useAuth } from "@/lib/authContext";
+import { PERMISSIONS } from "@/lib/rbac";
 
 export default function StatCards({ data, loading }) {
+  const { hasPermission } = useAuth();
+  const canViewRevenue = hasPermission(PERMISSIONS.VIEW_REVENUE);
   const stats = data?.stats || {
     todayCheckIns: 0,
     todayCheckOuts: 0,
@@ -88,6 +92,15 @@ export default function StatCards({ data, loading }) {
                   style={{ width: "130px", height: "14px" }}
                 />
               </div>
+            ) : card.format === "currency" && !canViewRevenue ? (
+              <>
+                <div className="stat-card-value" style={{ letterSpacing: "2px", color: "var(--text-tertiary)" }}>
+                  $ &bull;&bull;&bull;&bull;&bull;&bull;
+                </div>
+                <div className="stat-card-meta" style={{ color: "var(--accent-red)", fontWeight: 500 }}>
+                  Restricted &middot; Owner only
+                </div>
+              </>
             ) : (
               <>
                 <div className="stat-card-value">
