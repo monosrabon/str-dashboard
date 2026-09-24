@@ -5,9 +5,9 @@ import { ROLES } from "@/lib/rbac";
 export async function GET(req) {
   try {
     const role = req.headers.get("x-user-role");
-    if (role && role !== ROLES.OWNER) {
+    if (role && role !== ROLES.SUPER_ADMIN && role !== "OWNER") {
       return NextResponse.json(
-        { error: "Forbidden: Executive Suite (OWNER) credentials required for financial ledgers." },
+        { error: "Forbidden: Executive Suite (SUPER ADMIN) credentials required for financial ledgers." },
         { status: 403 }
       );
     }
@@ -21,9 +21,9 @@ export async function GET(req) {
 export async function POST(req) {
   try {
     const role = req.headers.get("x-user-role");
-    if (role && role !== ROLES.OWNER) {
+    if (role && role !== ROLES.SUPER_ADMIN && role !== "OWNER") {
       return NextResponse.json(
-        { error: "Forbidden: Only Executive Suite (OWNER) can post expense vouchers." },
+        { error: "Forbidden: Only Executive Suite (SUPER ADMIN) can post expense vouchers." },
         { status: 403 }
       );
     }

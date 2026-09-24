@@ -164,7 +164,7 @@ export default function RevenueChart({ data, loading }) {
             </div>
             <div className="empty-state-title">Executive Yield Restricted</div>
             <div className="empty-state-text">
-              Realized P&amp;L performance charts and profit distributions are restricted to Executive Suite (OWNER) credentials.
+              Realized P&amp;L performance charts and profit distributions are restricted to Executive Suite (SUPER ADMIN) credentials.
             </div>
           </div>
         ) : loading ? (

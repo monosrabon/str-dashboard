@@ -3,7 +3,8 @@
 // ═══════════════════════════════════════════════════════════════
 
 export const ROLES = {
-  OWNER: "OWNER",
+  SUPER_ADMIN: "SUPER_ADMIN",
+  OWNER: "SUPER_ADMIN", // alias for backward compatibility
   MANAGER: "MANAGER",
   CLEANER: "CLEANER",
   MAINTENANCE: "MAINTENANCE",
@@ -30,7 +31,25 @@ export const PERMISSIONS = {
 
 // Role-Permission Matrix
 export const ROLE_PERMISSIONS = {
-  [ROLES.OWNER]: [
+  [ROLES.SUPER_ADMIN]: [
+    PERMISSIONS.VIEW_DASHBOARD,
+    PERMISSIONS.VIEW_PROPERTIES,
+    PERMISSIONS.MANAGE_PROPERTIES,
+    PERMISSIONS.VIEW_RESERVATIONS,
+    PERMISSIONS.MANAGE_RESERVATIONS,
+    PERMISSIONS.VIEW_CLEANING,
+    PERMISSIONS.MANAGE_CLEANING,
+    PERMISSIONS.VIEW_GUESTS,
+    PERMISSIONS.VIEW_MAINTENANCE,
+    PERMISSIONS.MANAGE_MAINTENANCE,
+    PERMISSIONS.VIEW_REVENUE,
+    PERMISSIONS.MANAGE_REVENUE,
+    PERMISSIONS.VIEW_AI_CONCIERGE,
+    PERMISSIONS.MANAGE_AI_CONCIERGE,
+    PERMISSIONS.EXPORT_AUDIT,
+  ],
+  // Legacy / alias support
+  OWNER: [
     PERMISSIONS.VIEW_DASHBOARD,
     PERMISSIONS.VIEW_PROPERTIES,
     PERMISSIONS.MANAGE_PROPERTIES,
@@ -93,13 +112,13 @@ export const ROUTE_POLICIES = {
 // Pre-configured Personas for Enterprise Training & Simulation
 export const ENTERPRISE_PERSONAS = [
   {
-    id: "usr_owner_01",
+    id: "usr_admin_01",
     name: "Sarah Mitchell",
-    role: ROLES.OWNER,
-    title: "Portfolio Executive & Owner",
+    role: ROLES.SUPER_ADMIN,
+    title: "Portfolio Executive & Super Admin",
     department: "Executive Suite",
     initials: "SM",
-    badge: "Full Governance",
+    badge: "Super Admin",
     badgeColor: "badge-maroon",
     description: "Complete unrestricted governance across portfolio assets, financial yields, bookings, and system configurations.",
   },

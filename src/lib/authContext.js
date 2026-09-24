@@ -16,7 +16,11 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     try {
-      const storedId = localStorage.getItem("aura_str_active_user");
+      let storedId = localStorage.getItem("aura_str_active_user");
+      if (storedId === "usr_owner_01") {
+        storedId = "usr_admin_01";
+        localStorage.setItem("aura_str_active_user", "usr_admin_01");
+      }
       if (storedId) {
         const found = ENTERPRISE_PERSONAS.find((p) => p.id === storedId);
         if (found) setCurrentUser(found);

@@ -98,7 +98,7 @@ export default function StatCards({ data, loading }) {
                   $ &bull;&bull;&bull;&bull;&bull;&bull;
                 </div>
                 <div className="stat-card-meta" style={{ color: "var(--accent-red)", fontWeight: 500 }}>
-                  Restricted &middot; Owner only
+                  Restricted &middot; Super Admin only
                 </div>
               </>
             ) : (
